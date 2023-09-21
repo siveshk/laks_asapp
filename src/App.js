@@ -9,15 +9,35 @@ function App() {
     setInputText(e.target.value);
   };
 
+  const handleThumbsUpClick = (index) => {
+    const updatedEnteredTexts = [...enteredTexts];
+    if (!updatedEnteredTexts[index].isThumbsUpClicked) {
+      updatedEnteredTexts[index].isThumbsUpClicked = true;
+      updatedEnteredTexts[index].isThumbsDownClicked = false;
+      setEnteredTexts(updatedEnteredTexts);
+    }
+  };
+
+  const handleThumbsDownClick = (index) => {
+    const updatedEnteredTexts = [...enteredTexts];
+    if (!updatedEnteredTexts[index].isThumbsDownClicked) {
+      updatedEnteredTexts[index].isThumbsDownClicked = true;
+      updatedEnteredTexts[index].isThumbsUpClicked = false;
+      setEnteredTexts(updatedEnteredTexts);
+    }
+  };
+
   const handleSubmit = () => {
     if (inputText.trim() !== '') {
       const newEntry = {
         text: inputText,
         prediction: "This is a sample prediction.", // Replace with your actual prediction logic
+        isThumbsUpClicked: false,
+        isThumbsDownClicked: false,
       };
       setEnteredTexts([...enteredTexts, newEntry]);
       setInputText('');
-      setShowAdditionalHeaders(false); // Hide additional headers after the first text is entered
+      setShowAdditionalHeaders(false);
     }
   };
 
@@ -44,14 +64,14 @@ function App() {
           </h1>
           {showAdditionalHeaders && (
             <>
-              <div className='flex justify-center items-center'>
-                <p className='text-4xl font-bold py-2'>
-                  Kudi panlam BRO
-                </p>
-              </div>
               <p className='text-2xl font-bold text-gray-500 pt-4'>
                 An intelligent system capable of identifying salient sentences within a given conversation
               </p>
+              <div className='flex justify-center items-center'>
+                <p className='text-4xl font-bold py-2'>
+                  Let's Get Started!
+                </p>
+              </div>
             </>
           )}
         </div>
@@ -69,11 +89,19 @@ function App() {
                   Prediction: {entry.prediction}
                 </span>
                 <div className='flex justify-end p-2'>
-                  <button className=' text-white rounded-full w-8 h-8 mr-2'>
-                    <span role='img' aria-label='thumbs-up'>👍</span>
+                  <button
+                    className={`text-white rounded-full w-8 h-8 mr-2 ${entry.isThumbsUpClicked ? 'bg-green-500' : ''}`}
+                    onClick={() => handleThumbsUpClick(index)}
+                    disabled={entry.isThumbsUpClicked || entry.isThumbsDownClicked}
+                  >
+                    {entry.isThumbsDownClicked ? null : <span role='img' aria-label='thumbs-up'>{entry.isThumbsUpClicked ? '✅' : '👍'}</span>}
                   </button>
-                  <button className=' text-white rounded-full w-8 h-8'>
-                    <span role='img' aria-label='thumbs-down'>👎</span>
+                  <button
+                    className={`text-white rounded-full w-8 h-8 ${entry.isThumbsDownClicked ? 'bg-red-500' : ''}`}
+                    onClick={() => handleThumbsDownClick(index)}
+                    disabled={entry.isThumbsUpClicked || entry.isThumbsDownClicked}
+                  >
+                    {entry.isThumbsUpClicked ? null : <span role='img' aria-label='thumbs-down'>{entry.isThumbsDownClicked ? '❌' : '👎'}</span>}
                   </button>
                 </div>
               </div>
