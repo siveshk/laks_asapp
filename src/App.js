@@ -1,9 +1,25 @@
 import React, { useState } from 'react';
+import axios from 'axios'; // Import axios
 
 function App() {
   const [inputText, setInputText] = useState('');
   const [enteredTexts, setEnteredTexts] = useState([]);
   const [showAdditionalHeaders, setShowAdditionalHeaders] = useState(true);
+  const [censoredText, setCensoredText] = useState();
+  const [pflag, setPflag] = useState();
+  const [predictedClass, setPredictedClass] = useState();
+  const [probability, setProbability] = useState();
+  const [outputData, setOutputData] = useState([]);
+
+  // Create a custom Axios instance with CORS options
+  const axiosInstance = axios.create({
+    baseURL: 'http://127.0.0.1:5000',
+    timeout: 5000,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+    },
+  });
 
   const handleInputChange = (e) => {
     setInputText(e.target.value);
@@ -15,6 +31,22 @@ function App() {
       updatedEnteredTexts[index].isThumbsUpClicked = true;
       updatedEnteredTexts[index].isThumbsDownClicked = false;
       setEnteredTexts(updatedEnteredTexts);
+
+      const feedbackData = {
+        sentence: inputText,
+        predicted: predictedClass,
+        probability: probability,
+        user_feedback: 1,
+      };
+
+      axiosInstance
+        .post("/feedback", feedbackData)
+        .then((res) => {
+          console.log(res.data);
+        })
+        .catch((err) => {
+          console.log("Error:", err);
+        });
     }
   };
 
@@ -24,26 +56,56 @@ function App() {
       updatedEnteredTexts[index].isThumbsDownClicked = true;
       updatedEnteredTexts[index].isThumbsUpClicked = false;
       setEnteredTexts(updatedEnteredTexts);
+      const feedbackData = {
+        sentence: inputText,
+        predicted: predictedClass,
+        probability: probability,
+        user_feedback: 0,
+      };
+
+      axiosInstance
+        .post("/feedback", feedbackData)
+        .then((res) => {
+          console.log(res.data);
+        })
+        .catch((err) => {
+          console.log("Error:", err);
+        });
     }
   };
 
   const handleSubmit = () => {
+    console.log("Submit button clicked.");
     if (inputText.trim() !== '') {
       const newEntry = {
         text: inputText,
-        prediction: "This is a sample prediction.", // Replace with your actual prediction logic
+        prediction: "This is a sample prediction.",
         isThumbsUpClicked: false,
         isThumbsDownClicked: false,
       };
       setEnteredTexts([...enteredTexts, newEntry]);
       setInputText('');
       setShowAdditionalHeaders(false);
+
+      axiosInstance
+        .post("/salient", { sentence: inputText })
+        .then((response) => {
+          const responseData = response.data;
+          console.log("Response Data:", responseData);
+          setPredictedClass(responseData.predicted_class);
+          setProbability(responseData.probabilities);
+          setPflag(responseData.pflag);
+          setCensoredText(responseData.censored_text);
+          setOutputData(responseData);
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+        });
     }
   };
 
   return (
     <div className='h-screen flex flex-col justify-center'>
-      {/* Remove the scrollbar using ::-webkit-scrollbar */}
       <style>
         {`
           /* Hide the scrollbar completely */
@@ -126,6 +188,29 @@ function App() {
             >
               Get Started
             </button>
+          </div>
+        </div>
+      </div>
+
+      <div className='text-center mt-4 mx-auto'>
+        <div className='max-w-[800px] mx-auto'>
+          <div className='rounded-md p-4'>
+            {outputData.map((output, index) => (
+              <div key={index} className={`mb-4 ${index % 2 === 0 ? 'bg-gray-700' : 'bg-gray-800'} rounded-md flex flex-col`}>
+                <span className='text-lg p-2 flex-grow' style={{ overflowWrap: 'break-word' }}>
+                  Censored Text: {output.censored_text}
+                </span>
+                <span className='text-lg p-2'>
+                  Pflag: {output.pflag}
+                </span>
+                <span className='text-lg p-2'>
+                  Predicted Class: {output.predicted_class}
+                </span>
+                <span className='text-lg p-2'>
+                  Probabilities: {output.probabilities}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
